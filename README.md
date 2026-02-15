@@ -36,7 +36,7 @@ pip install -r requirements.txt
 ```
 
 ### 数据库
-- **默认连接**：远程 MySQL `47.108.151.60` / `yhl_0118` / `qiQi1314**00` / `yhl_0118`。
+- **默认连接**：需自行配置 MySQL，使用环境变量 `MYSQL_HOST/USER/PASSWORD/DATABASE` 注入，仓库不包含具体地址和密码。
 - **本地调试**：若暂时无法访问服务器，可在命令前添加 `DJANGO_USE_SQLITE=1` 使用 SQLite。
 - 如需修改凭据，请设置环境变量 `MYSQL_HOST/USER/PASSWORD/DATABASE` 或在部署平台注入。
 
