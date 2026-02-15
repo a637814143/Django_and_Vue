@@ -1,0 +1,50 @@
+[
+  {
+    "model": "store.category",
+    "pk": 1,
+    "fields": {
+      "name": "校徽周边",
+      "description": "徽章、帆布袋等带有校园标识的商品",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "store.category",
+    "pk": 2,
+    "fields": {
+      "name": "文化文创",
+      "description": "校史、艺术作品衍生品",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 1,
+    "fields": {
+      "category": 1,
+      "name": "校园徽章套装",
+      "description": "包含四款不同主题的限量徽章",
+      "price": "48.00",
+      "stock": 120,
+      "is_available": true,
+      "cover_image": "",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "store.product",
+    "pk": 2,
+    "fields": {
+      "category": 2,
+      "name": "校史主题手账本",
+      "description": "A5 大小，收录重要校园建筑插画",
+      "price": "68.00",
+      "stock": 80,
+      "is_available": true,
+      "cover_image": "",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

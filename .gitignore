@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+db.sqlite3
+venv/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Node/Vue
+node_modules/
+dist/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# IDE/editor
+.idea/
+.vscode/
+
+# System
+.DS_Store

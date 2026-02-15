@@ -1,0 +1,82 @@
+:root {
+  font-family: "SF Pro Display", "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0f2d1f;
+  background-color: #e8f6ee;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(187, 247, 208, 0.7), rgba(232, 246, 238, 0.85));
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 22px;
+  border: 1px solid rgba(15, 45, 31, 0.08);
+  box-shadow: 0 20px 45px rgba(16, 68, 50, 0.07);
+  padding: 24px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.btn-primary {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6fcf97, #7ee8d5);
+  color: #053524;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  border: 1px solid rgba(15, 45, 31, 0.2);
+  border-radius: 999px;
+  padding: 12px 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 45, 31, 0.15);
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+}
+
+label {
+  font-size: 0.85rem;
+  color: #4c675b;
+}
