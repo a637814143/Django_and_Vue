@@ -1,7 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useAuthStore } from "../store/auth";
-import GlassCard from "../components/ui/GlassCard.vue";
 import { customizationApi } from "../api";
 
 const wishes = ref([]);
@@ -49,98 +48,63 @@ onMounted(loadWishes);
 </script>
 
 <template>
-  <div class="grid">
-    <GlassCard title="定制请求">
-      <article v-for="wish in wishes" :key="wish.id" class="wish-card">
-        <header>
-          <div>
-            <p class="eyebrow">{{ wish.consumer }}</p>
-            <h3>{{ wish.title }}</h3>
-          </div>
-          <span class="status">{{ wish.status }}</span>
-        </header>
-        <p>{{ wish.description }}</p>
-        <p class="budget">预算：¥{{ wish.budget || "待确认" }}</p>
-        <div class="timeline">
-          <p v-for="entry in wish.timeline" :key="entry.id">
-            <strong>{{ entry.author }}</strong>：{{ entry.message }}
-          </p>
-        </div>
-        <div class="actions">
-          <button class="btn-outline" @click="addNote(wish)">互动</button>
-          <button
-            v-if="['MERCHANT', 'ADMIN'].includes(auth.role)"
-            class="btn-primary"
-            @click="claimWish(wish)"
-          >
-            认领
-          </button>
-        </div>
-      </article>
-      <p v-if="!wishes.length" class="empty">快来发布第一条定制心愿吧</p>
-    </GlassCard>
-
-    <GlassCard title="创建新心愿">
-      <form class="form" @submit.prevent="submitWish">
-        <label>主题 <input v-model="form.title" required /></label>
-        <label>描述 <textarea v-model="form.description" rows="4" required /></label>
-        <label>预算 <input v-model.number="form.budget" type="number" min="0" /></label>
-        <label>期望完成日期 <input v-model="form.due_date" type="date" /></label>
-        <button class="btn-primary">提交</button>
-        <p v-if="message">{{ message }}</p>
-      </form>
-    </GlassCard>
-  </div>
+  <v-container fluid>
+    <v-row>
+      <v-col cols="12" md="8">
+        <v-card>
+          <v-card-title>定制请求</v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item v-for="wish in wishes" :key="wish.id">
+                <v-card class="mb-4" outlined>
+                  <v-card-title class="d-flex justify-space-between">
+                    {{ wish.title }}
+                    <v-chip>{{ wish.status }}</v-chip>
+                  </v-card-title>
+                  <v-card-subtitle>{{ wish.consumer }}</v-card-subtitle>
+                  <v-card-text>
+                    <p>{{ wish.description }}</p>
+                    <p>预算：¥{{ wish.budget || "待确认" }}</p>
+                    <div class="timeline">
+                      <p v-for="entry in wish.timeline" :key="entry.id">
+                        <strong>{{ entry.author }}</strong>：{{ entry.message }}
+                      </p>
+                    </div>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-btn text @click="addNote(wish)">互动</v-btn>
+                    <v-btn
+                      v-if="['MERCHANT', 'ADMIN'].includes(auth.role)"
+                      color="primary"
+                      @click="claimWish(wish)"
+                    >
+                      认领
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-list-item>
+              <v-list-item v-if="!wishes.length">
+                <p>快来发布第一条定制心愿吧</p>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-card>
+          <v-card-title>创建新心愿</v-card-title>
+          <v-card-text>
+            <v-form @submit.prevent="submitWish">
+              <v-text-field v-model="form.title" label="主题" required></v-text-field>
+              <v-textarea v-model="form.description" label="描述" rows="4" required></v-textarea>
+              <v-text-field v-model.number="form.budget" label="预算" type="number" min="0"></v-text-field>
+              <v-text-field v-model="form.due_date" label="期望完成日期" type="date"></v-text-field>
+              <v-btn type="submit" color="primary">提交</v-btn>
+              <p v-if="message">{{ message }}</p>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
-
-<style scoped>
-.grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 1024px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.wish-card {
-  padding: 18px;
-  border-radius: 20px;
-  border: 1px solid rgba(15, 45, 31, 0.08);
-  background: rgba(255, 255, 255, 0.85);
-  margin-bottom: 16px;
-}
-
-.status {
-  font-weight: 600;
-}
-
-.budget {
-  color: #4d6359;
-}
-
-.timeline {
-  margin: 12px 0;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(111, 207, 151, 0.12);
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.empty {
-  color: #6c7f74;
-}
-</style>

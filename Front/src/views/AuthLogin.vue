@@ -33,76 +33,63 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="auth-screen">
-    <section class="auth-card glass">
-      <p class="eyebrow">校园文创系统</p>
-      <h1>欢迎回来</h1>
-      <p class="subtitle">请使用校园统一账号登录，继续创意之旅</p>
-
-      <form @submit.prevent="handleSubmit" class="auth-form">
-        <label>
-          用户名
-          <input v-model="form.username" placeholder="campus maker" autocomplete="username" required />
-        </label>
-        <label>
-          密码
-          <input
-            v-model="form.password"
-            type="password"
-            placeholder="•••••••"
-            autocomplete="current-password"
-            required
-          />
-        </label>
-        <p v-if="error" class="error">{{ error }}</p>
-        <button class="btn-primary" type="submit" :disabled="loading">
-          {{ loading ? "登录中..." : "登录" }}
-        </button>
-      </form>
-
-      <p class="switch">
-        尚未拥有账号？
-        <RouterLink to="/register">立即注册</RouterLink>
-      </p>
-    </section>
-  </div>
+  <v-container class="fill-height" fluid>
+    <v-row align="center" justify="center">
+      <v-col cols="12" sm="8" md="4">
+        <v-card class="elevation-12">
+          <v-toolbar color="primary" dark flat>
+            <v-toolbar-title>校园文创系统</v-toolbar-title>
+          </v-toolbar>
+          <v-card-text>
+            <p class="text-h6 text-center mb-4">欢迎回来</p>
+            <p class="text-subtitle-1 text-center mb-4">请使用校园统一账号登录，继续创意之旅</p>
+            <v-form @submit.prevent="handleSubmit">
+              <v-text-field
+                v-model="form.username"
+                label="用户名"
+                placeholder="campus maker"
+                autocomplete="username"
+                required
+                prepend-inner-icon="mdi-account"
+              ></v-text-field>
+              <v-text-field
+                v-model="form.password"
+                label="密码"
+                type="password"
+                placeholder="•••••••"
+                autocomplete="current-password"
+                required
+                prepend-inner-icon="mdi-lock"
+              ></v-text-field>
+              <v-alert v-if="error" type="error" dense dismissible class="mb-4">
+                {{ error }}
+              </v-alert>
+              <v-btn
+                :loading="loading"
+                :disabled="loading"
+                type="submit"
+                color="primary"
+                block
+                size="large"
+              >
+                {{ loading ? "登录中..." : "登录" }}
+              </v-btn>
+            </v-form>
+          </v-card-text>
+          <v-card-actions class="justify-center">
+             <p class="text-center">
+              尚未拥有账号？
+              <RouterLink to="/register">立即注册</RouterLink>
+            </p>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>
-.auth-screen {
+.fill-height {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 40px 16px;
-  background: radial-gradient(circle at top, rgba(168, 230, 207, 0.5), rgba(232, 246, 238, 0.8));
-}
-
-.auth-card {
-  width: min(480px, 100%);
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 24px 0;
-}
-
-.subtitle {
-  color: #4d6359;
-}
-
-.error {
-  color: #c53030;
-  margin: 0;
-}
-
-.switch {
-  text-align: center;
-  color: #4d6359;
-}
-
-.switch a {
-  font-weight: 600;
 }
 </style>

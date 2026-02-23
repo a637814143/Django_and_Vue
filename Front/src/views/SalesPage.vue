@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import GlassCard from "../components/ui/GlassCard.vue";
-import { orderApi } from "../api";
+import { orderApi, walletApi } from "../api";
+import { useAuthStore } from "../store/auth";
+
+const auth = useAuthStore();
 
 const orders = ref([]);
 const loading = ref(false);
@@ -10,7 +12,7 @@ const statusFilter = ref("ALL");
 const actionLoading = ref(null);
 
 const statusLabels = {
-  CREATED: "待付款",
+  CREATED: "待支付",
   PAID: "已支付",
   FULFILLED: "已备货",
   SHIPPED: "已发货",
@@ -18,14 +20,21 @@ const statusLabels = {
   CANCELLED: "已取消/退款",
 };
 
+const refundLabels = {
+  NONE: "无退款",
+  REQUESTED: "退款申请中",
+  APPROVED: "已同意退款",
+  REJECTED: "已拒绝",
+};
+
 const statusOptions = [
-  { value: "ALL", label: "全部" },
-  { value: "CREATED", label: "待付款" },
-  { value: "PAID", label: "已支付" },
-  { value: "FULFILLED", label: "已备货" },
-  { value: "SHIPPED", label: "已发货" },
-  { value: "COMPLETED", label: "已完成" },
-  { value: "CANCELLED", label: "已取消" },
+  { value: "ALL", title: "全部" },
+  { value: "CREATED", title: "待支付" },
+  { value: "PAID", title: "已支付" },
+  { value: "FULFILLED", title: "已备货" },
+  { value: "SHIPPED", title: "已发货" },
+  { value: "COMPLETED", title: "已完成" },
+  { value: "CANCELLED", title: "已取消/退款" },
 ];
 
 const filteredOrders = computed(() => {
@@ -59,6 +68,19 @@ const updateStatus = async (order, status) => {
   }
 };
 
+const handleRefundAction = async (order, action) => {
+  actionLoading.value = order.id;
+  error.value = "";
+  try {
+    await walletApi.refund({ order_id: order.id, action });
+    await loadOrders();
+  } catch (err) {
+    error.value = err?.response?.data?.detail || "处理退款失败";
+  } finally {
+    actionLoading.value = null;
+  }
+};
+
 const availableActions = (order) => {
   const actions = [];
   if (order.status === "PAID") actions.push({ label: "标记备货", value: "FULFILLED" });
@@ -69,183 +91,99 @@ const availableActions = (order) => {
   return actions;
 };
 
+const showRefundButtons = computed(() => auth.user?.role === "MERCHANT" || auth.user?.role === "ADMIN");
+const showForceRefund = computed(() => auth.user?.role === "ADMIN");
+
 onMounted(loadOrders);
 </script>
 
 <template>
-  <div class="page">
-    <header class="page-head">
-      <div>
-        <p class="eyebrow">订单管理</p>
-        <h1>商家订单中心</h1>
-        <p class="hint">查看消费者订单、跟进发货与处理退款</p>
-      </div>
-      <div class="filters">
-        <select v-model="statusFilter" @change="loadOrders">
-          <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-        </select>
-        <button class="btn-outline" type="button" @click="loadOrders">刷新</button>
-      </div>
-    </header>
-
-    <GlassCard title="订单列表">
-      <p v-if="loading" class="hint">加载中...</p>
-      <p v-else-if="error" class="error">{{ error }}</p>
-      <div v-else class="order-list">
-        <article v-for="order in filteredOrders" :key="order.id" class="order-card">
-          <header>
-            <div>
-              <p class="eyebrow">#{{ order.order_number }}</p>
-              <h3>{{ order.consumer }}</h3>
-              <p class="hint">下单时间：{{ new Date(order.created_at).toLocaleString() }}</p>
-            </div>
-            <div class="status-pill" :data-status="order.status">
-              {{ statusLabels[order.status] || order.status }}
-            </div>
-          </header>
-          <div class="items">
-            <div v-for="item in order.items" :key="item.id" class="item-row">
-              <span>{{ item.product }} × {{ item.quantity }}</span>
-              <span>¥{{ Number(item.unit_price).toFixed(2) }}</span>
-            </div>
-          </div>
-          <div class="meta">
-            <span>总额：<strong>¥{{ Number(order.total_amount).toFixed(2) }}</strong></span>
-            <span>支付方式：{{ order.payment_method || "钱包/线下" }}</span>
-            <span>收货：{{ order.shipping_address || "未填写" }}</span>
-          </div>
-          <div class="actions" v-if="availableActions(order).length">
-            <button
-              v-for="action in availableActions(order)"
-              :key="action.value"
-              class="btn-outline"
-              :disabled="actionLoading === order.id"
-              @click="updateStatus(order, action.value)"
-            >
-              {{ actionLoading === order.id ? "处理中..." : action.label }}
-            </button>
-          </div>
-        </article>
-        <p v-if="!filteredOrders.length && !loading" class="empty">暂无订单</p>
-      </div>
-    </GlassCard>
-  </div>
+  <v-container fluid>
+    <v-card>
+      <v-card-title>订单管理</v-card-title>
+      <v-card-subtitle>查看并处理退款/发货</v-card-subtitle>
+      <v-card-text>
+        <div class="d-flex ga-4">
+          <v-select
+            v-model="statusFilter"
+            :items="statusOptions"
+            label="筛选订单状态"
+            @update:modelValue="loadOrders"
+            style="max-width: 220px"
+          ></v-select>
+          <v-btn @click="loadOrders" :loading="loading">刷新</v-btn>
+        </div>
+        <v-alert v-if="error" type="error" class="mt-2">{{ error }}</v-alert>
+        <v-progress-circular v-if="loading" indeterminate class="mt-4"></v-progress-circular>
+        <v-expansion-panels v-else>
+          <v-expansion-panel v-for="order in filteredOrders" :key="order.id">
+            <v-expansion-panel-title>
+              #{{ order.order_number }} - {{ order.consumer }}
+              <v-chip class="ml-2" size="small" color="info">{{ statusLabels[order.status] || order.status }}</v-chip>
+              <v-chip
+                v-if="order.refund_status && order.refund_status !== 'NONE'"
+                class="ml-2"
+                size="small"
+                color="warning"
+              >
+                {{ refundLabels[order.refund_status] || order.refund_status }}
+              </v-chip>
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <p>下单时间：{{ new Date(order.created_at).toLocaleString() }}</p>
+              <p>总额：¥{{ Number(order.total_amount).toFixed(2) }}</p>
+              <p>支付方式：{{ order.payment_method || "钱包/线下" }}</p>
+              <p>收货：{{ order.shipping_address || "未填写" }}</p>
+              <v-list>
+                <v-list-item v-for="item in order.items" :key="item.id">
+                  <v-list-item-title>{{ item.product }} × {{ item.quantity }}</v-list-item-title>
+                  <v-list-item-subtitle>¥{{ Number(item.unit_price).toFixed(2) }}</v-list-item-subtitle>
+                </v-list-item>
+              </v-list>
+              <div class="d-flex ga-2 mt-3" v-if="availableActions(order).length">
+                <v-btn
+                  v-for="action in availableActions(order)"
+                  :key="action.value"
+                  small
+                  :loading="actionLoading === order.id"
+                  @click="updateStatus(order, action.value)"
+                >
+                  {{ action.label }}
+                </v-btn>
+              </div>
+              <div class="d-flex ga-2 mt-3" v-if="showRefundButtons">
+                <v-btn
+                  v-if="order.refund_status === 'REQUESTED'"
+                  color="primary"
+                  variant="tonal"
+                  :loading="actionLoading === order.id"
+                  @click="handleRefundAction(order, 'APPROVE')"
+                >
+                  同意退款
+                </v-btn>
+                <v-btn
+                  v-if="order.refund_status === 'REQUESTED'"
+                  color="warning"
+                  variant="tonal"
+                  :loading="actionLoading === order.id"
+                  @click="handleRefundAction(order, 'REJECT')"
+                >
+                  拒绝退款
+                </v-btn>
+                <v-btn
+                  v-if="showForceRefund"
+                  color="error"
+                  variant="flat"
+                  :loading="actionLoading === order.id"
+                  @click="handleRefundAction(order, 'FORCE')"
+                >
+                  强制退款
+                </v-btn>
+              </div>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-card-text>
+    </v-card>
+  </v-container>
 </template>
-
-<style scoped>
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.page-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.filters {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(15, 45, 31, 0.12);
-}
-
-.order-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.order-card {
-  border: 1px solid rgba(15, 45, 31, 0.1);
-  border-radius: 16px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.85);
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.status-pill {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(15, 45, 31, 0.08);
-  font-weight: 600;
-}
-
-.status-pill[data-status="PAID"] {
-  background: rgba(111, 207, 151, 0.2);
-}
-
-.status-pill[data-status="SHIPPED"],
-.status-pill[data-status="FULFILLED"] {
-  background: rgba(59, 130, 246, 0.15);
-}
-
-.status-pill[data-status="COMPLETED"] {
-  background: rgba(16, 185, 129, 0.2);
-}
-
-.status-pill[data-status="CANCELLED"] {
-  background: rgba(255, 99, 132, 0.2);
-}
-
-.items {
-  margin: 10px 0;
-  display: grid;
-  gap: 6px;
-}
-
-.item-row {
-  display: flex;
-  justify-content: space-between;
-  color: #0f2d1f;
-}
-
-.meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  color: #4d6359;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.empty {
-  color: #6b7f73;
-}
-
-.hint {
-  color: #4d6359;
-  margin: 0;
-}
-
-.error {
-  color: #b42318;
-}
-
-.btn-outline {
-  border: 1px solid rgba(15, 45, 31, 0.2);
-  border-radius: 10px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-}
-</style>

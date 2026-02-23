@@ -93,339 +93,70 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="store-detail">
-    <section class="hero">
-      <div class="hero-left">
-        <button class="ghost" type="button" @click="goBack">← 返回店铺列表</button>
-        <div class="store-header">
-          <div class="avatar">
-            <span>{{ store?.name?.slice(0, 1)?.toUpperCase() }}</span>
-          </div>
-          <div>
-            <p class="eyebrow">Store</p>
-            <h1 v-if="store">{{ store.name }}</h1>
-            <div v-if="store" class="meta">
-              <span>商品 {{ store.product_count || 0 }}</span>
-            </div>
-          </div>
-        </div>
-        <p class="desc" v-if="store">{{ store.description || "这家店铺暂未填写简介。" }}</p>
-        <p v-if="storeError" class="error">{{ storeError }}</p>
-      </div>
-      <div class="hero-right" v-if="store">
-        <div class="stat-card">
-          <p class="label">在售商品</p>
-          <strong>{{ store.product_count || 0 }}</strong>
-        </div>
-      </div>
-    </section>
+  <v-container fluid>
+    <v-btn text @click="goBack" class="mb-4">
+      <v-icon left>mdi-arrow-left</v-icon>
+      返回店铺列表
+    </v-btn>
 
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">全部商品</p>
-          <h3>店铺商品一览</h3>
-        </div>
-        <div class="pager" v-if="productPageCount > 1">
-          <button class="ghost" @click="changePage(productPage - 1)" :disabled="productPage === 1">
-            上一页
-          </button>
-          <span class="page-info">第 {{ productPage }} / {{ productPageCount }} 页</span>
-          <button
-            class="ghost"
-            @click="changePage(productPage + 1)"
-            :disabled="productPage === productPageCount"
-          >
-            下一页
-          </button>
-        </div>
-      </div>
+    <v-card v-if="store" class="mb-4">
+      <v-card-title>
+        <v-avatar color="primary" class="mr-4">
+          <span>{{ store?.name?.slice(0, 1)?.toUpperCase() }}</span>
+        </v-avatar>
+        {{ store.name }}
+      </v-card-title>
+      <v-card-subtitle>商品 {{ store.product_count || 0 }}</v-card-subtitle>
+      <v-card-text>{{ store.description || "这家店铺暂未填写简介。" }}</v-card-text>
+      <v-alert v-if="storeError" type="error">{{ storeError }}</v-alert>
+    </v-card>
 
-      <p v-if="productError" class="error">{{ productError }}</p>
-
-      <div v-if="productLoading" class="skeleton-grid">
-        <div class="skeleton-card" v-for="i in 6" :key="i"></div>
-      </div>
-
-      <div v-else class="product-grid">
-        <article v-for="item in products" :key="item.id" class="product-card">
-          <div
-            class="cover"
-            :style="{
-              backgroundImage: item.hero_image ? `url(${item.hero_image})` : 'linear-gradient(135deg, #e2e8f0, #cbd5e1)'
-            }"
-          ></div>
-          <header>
-            <span class="pill-dark">{{ item.category?.name || "未分类" }}</span>
-            <strong>¥{{ Number(item.price || 0).toFixed(2) }}</strong>
-          </header>
-          <h3>{{ item.title }}</h3>
-          <p class="desc">{{ item.description || "暂无描述" }}</p>
-          <footer>
-            <div class="meta">
-              <span>库存 {{ item.inventory ?? 0 }}</span>
-              <span v-if="item.store?.name">店铺 {{ item.store.name }}</span>
-            </div>
-            <button class="ghost" type="button" @click="addToCart(item)">加入购物车</button>
-          </footer>
-        </article>
-        <p v-if="!products.length && !productLoading && !productError" class="empty">暂无商品。</p>
-      </div>
-
-      <div class="pagination" v-if="productPageCount > 1">
-        <button class="btn" @click="changePage(productPage - 1)" :disabled="productPage === 1">
-          上一页
-        </button>
-        <span class="page-info">第 {{ productPage }} / {{ productPageCount }} 页</span>
-        <button
-          class="btn"
-          @click="changePage(productPage + 1)"
-          :disabled="productPage === productPageCount"
-        >
-          下一页
-        </button>
-      </div>
-    </section>
-  </div>
+    <v-card>
+      <v-card-title>全部商品</v-card-title>
+      <v-card-subtitle>店铺商品一览</v-card-subtitle>
+      <v-divider></v-divider>
+      <v-card-text>
+        <v-alert v-if="productError" type="error">{{ productError }}</v-alert>
+        <v-row v-if="productLoading">
+          <v-col v-for="i in 6" :key="i" cols="12" sm="6" md="4">
+            <v-skeleton-loader type="card"></v-skeleton-loader>
+          </v-col>
+        </v-row>
+        <v-row v-else-if="products.length">
+          <v-col v-for="item in products" :key="item.id" cols="12" sm="6" md="4">
+            <v-card>
+              <v-img :src="item.hero_image" height="200px" cover>
+                 <template v-slot:error>
+                    <v-img
+                      src="https://via.placeholder.com/300x200.png?text=No+Image"
+                      height="200px"
+                      cover
+                    ></v-img>
+                  </template>
+              </v-img>
+              <v-card-title>{{ item.title }}</v-card-title>
+               <v-card-subtitle>{{ item.category?.name || "未分类" }}</v-card-subtitle>
+              <v-card-text>{{ item.description || "暂无描述" }}</v-card-text>
+              <v-divider></v-divider>
+              <v-card-actions>
+                <v-chip>库存 {{ item.inventory ?? 0 }}</v-chip>
+                <v-spacer></v-spacer>
+                <v-chip color="primary">¥{{ Number(item.price || 0).toFixed(2) }}</v-chip>
+                <v-btn size="small" variant="tonal" prepend-icon="mdi-cart-plus" @click="addToCart(item)">
+                  加入购物车
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-col>
+        </v-row>
+        <p v-else>暂无商品。</p>
+      </v-card-text>
+      <v-pagination
+        v-if="productPageCount > 1"
+        v-model="productPage"
+        :length="productPageCount"
+        @input="changePage"
+      ></v-pagination>
+    </v-card>
+  </v-container>
 </template>
-
-<style scoped>
-.store-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  background: linear-gradient(120deg, #f0fdf4, #ecfeff);
-  border: 1px solid #dcfce7;
-  align-items: center;
-}
-
-.hero-left {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.store-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: #0f172a;
-  color: #f8fafc;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-}
-
-.eyebrow {
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  color: #047857;
-  margin: 0;
-}
-
-.meta {
-  display: flex;
-  gap: 10px;
-  color: #475569;
-}
-
-.desc {
-  color: #475569;
-  margin: 0;
-}
-
-.hero-right {
-  display: flex;
-  gap: 12px;
-}
-
-.stat-card {
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: #0f172a;
-  color: #f8fafc;
-  min-width: 120px;
-}
-
-.stat-card .label {
-  margin: 0 0 6px;
-  color: #cbd5e1;
-}
-
-.ghost {
-  border: 1px solid #e2e8f0;
-  background: white;
-  padding: 8px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.pager {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.product-card {
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  padding: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 170px;
-}
-
-.cover {
-  width: 100%;
-  height: 140px;
-  border-radius: 10px;
-  background-size: cover;
-  background-position: center;
-  border: 1px solid #e2e8f0;
-}
-
-.product-card header,
-.product-card footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #475569;
-}
-
-.product-card h3 {
-  margin: 0;
-  color: #0f172a;
-}
-
-.product-card footer {
-  gap: 10px;
-}
-
-.product-card footer .meta {
-  display: flex;
-  gap: 10px;
-}
-
-.pill-dark {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 0.85rem;
-}
-
-.pagination {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.btn {
-  border: 1px solid #0f172a;
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 8px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-info {
-  color: #0f172a;
-}
-
-.error {
-  color: #b91c1c;
-}
-
-.empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #6b7280;
-}
-
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.skeleton-card {
-  height: 150px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@media (max-width: 960px) {
-  .hero {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .hero-right {
-    width: 100%;
-  }
-
-  .panel-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-}
-</style>

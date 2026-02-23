@@ -9,6 +9,7 @@ export const accountApi = {
   updateProfile: (payload) => unwrap(http.put("accounts/profile/", payload)),
   logout: () => unwrap(http.post("accounts/logout/")),
   users: (params = {}) => unwrap(http.get("accounts/users/", { params })),
+  resetPassword: (payload) => unwrap(http.post("accounts/reset_password/", payload)),
 };
 
 export const catalogApi = {
@@ -16,6 +17,8 @@ export const catalogApi = {
   products: (params = {}) => unwrap(http.get("catalog/products/", { params })),
   createProduct: (payload) => unwrap(http.post("catalog/products/", payload)),
   createCategory: (payload) => unwrap(http.post("catalog/categories/", payload)),
+  updateCategory: (id, payload) => unwrap(http.put(`catalog/categories/${id}/`, payload)),
+  deleteCategory: (id) => unwrap(http.delete(`catalog/categories/${id}/`)),
   updateProduct: (id, payload) => unwrap(http.put(`catalog/products/${id}/`, payload)),
 };
 
@@ -36,7 +39,6 @@ export const walletApi = {
   refund: (payload) => unwrap(http.post("wallet/refund/", payload)),
   config: () => unwrap(http.get("wallet/config/")),
   updateConfig: (payload) => unwrap(http.put("wallet/config/", payload)),
-  recharge: (payload) => unwrap(http.post("wallet/recharge/", payload)),
   generateVouchers: (payload) => unwrap(http.post("wallet/vouchers/generate/", payload)),
   redeemVoucher: (payload) => unwrap(http.post("wallet/vouchers/redeem/", payload)),
   vouchers: () => unwrap(http.get("wallet/vouchers/")),
@@ -49,14 +51,6 @@ export const addressApi = {
   remove: (id) => unwrap(http.delete(`accounts/addresses/${id}/`)),
 };
 
-export const storefrontApi = {
-  stores: (params = {}) => unwrap(http.get("storefront/stores/", { params })),
-  storeDetail: (id) => unwrap(http.get(`storefront/stores/${id}/`)),
-  storeProducts: (id, params = {}) => unwrap(http.get(`storefront/stores/${id}/products/`, { params })),
-  categories: (params = {}) => unwrap(http.get("storefront/categories/", { params })),
-  products: (params = {}) => unwrap(http.get("storefront/products/", { params })),
-};
-
 export const customizationApi = {
   list: () => unwrap(http.get("customization/wishes/")),
   create: (payload) => unwrap(http.post("customization/wishes/", payload)),
@@ -67,6 +61,9 @@ export const customizationApi = {
 export const analyticsApi = {
   overview: () => unwrap(http.get("analytics/overview/")),
   metrics: () => unwrap(http.get("analytics/metrics/")),
+  commerceInsights: () => unwrap(http.get("analytics/commerce-insights/")),
+  userStats: () => unwrap(http.get("analytics/user-stats/")),
+  userLogs: (userId) => unwrap(http.get(`analytics/user-logs/${userId}/`)),
 };
 
 export const communityApi = {
@@ -129,6 +126,14 @@ export const focusApi = {
   addComment: (id, payload) => unwrap(http.post(`focus/videos/${id}/comments/`, payload)),
   deactivate: (id) => unwrap(http.post(`focus/videos/${id}/deactivate/`)),
   restore: (id) => unwrap(http.post(`focus/videos/${id}/restore/`)),
+};
+
+export const storefrontApi = {
+  stores: (params = {}) => unwrap(http.get("storefront/stores/", { params })),
+  storeDetail: (id) => unwrap(http.get(`storefront/stores/${id}/`)),
+  storeProducts: (id, params = {}) => unwrap(http.get(`storefront/stores/${id}/products/`, { params })),
+  categories: (params = {}) => unwrap(http.get("storefront/categories/", { params })),
+  products: (params = {}) => unwrap(http.get("storefront/products/", { params })),
 };
 
 export const adminApi = {

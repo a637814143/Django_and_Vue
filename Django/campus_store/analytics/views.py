@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum
@@ -45,6 +45,68 @@ class AnalyticsOverviewView(APIView):
             "orders_last_7_days": order_count,
             "custom_requests_last_7_days": new_custom_requests,
             "active_products": active_products,
+        }
+        return Response(payload)
+
+
+class CommerceInsightsView(APIView):
+    permission_classes = [RolePermission]
+    allowed_roles = [User.Role.ADMIN]
+
+    def get(self, request):
+        today = timezone.localdate()
+        start_date = today - timedelta(days=29)
+        window_end = today
+        revenue_orders = Order.objects.all()
+        total_revenue = revenue_orders.aggregate(total=Sum("total_amount")).get("total") or 0
+        merchant_count = User.objects.filter(role=User.Role.MERCHANT).count()
+        product_count = Product.objects.filter(is_active=True).count()
+
+        start_dt = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+        end_dt = timezone.make_aware(datetime.combine(window_end, datetime.max.time()))
+
+        monthly_orders = revenue_orders.filter(created_at__range=(start_dt, end_dt))
+        if not monthly_orders.exists():
+            latest = revenue_orders.order_by("-created_at").values_list("created_at", flat=True).first()
+            if latest:
+                window_end = timezone.localdate(latest)
+                start_date = window_end - timedelta(days=29)
+                start_dt = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+                end_dt = timezone.make_aware(datetime.combine(window_end, datetime.max.time()))
+                monthly_orders = revenue_orders.filter(created_at__range=(start_dt, end_dt))
+
+        daily_map = {}
+        for entry in monthly_orders.values("created_at", "total_amount"):
+            day = timezone.localdate(entry["created_at"])
+            daily_map[day] = daily_map.get(day, 0) + float(entry["total_amount"] or 0)
+        monthly_sales = []
+        for i in range(30):
+            day = start_date + timedelta(days=i)
+            amount = float(daily_map.get(day, 0) or 0)
+            monthly_sales.append({"date": day.isoformat(), "amount": amount})
+
+        merchant_sales_qs = (
+            monthly_orders.values("merchant_id", "merchant__username", "merchant__store_name")
+            .annotate(total=Sum("total_amount"))
+            .order_by("-total")
+        )
+        merchant_sales = [
+            {
+                "merchant_id": entry["merchant_id"],
+                "merchant": entry["merchant__store_name"] or entry["merchant__username"],
+                "amount": float(entry["total"] or 0),
+            }
+            for entry in merchant_sales_qs
+        ]
+
+        payload = {
+            "total_revenue": float(total_revenue or 0),
+            "merchant_count": merchant_count,
+            "product_count": product_count,
+            "monthly_sales": monthly_sales,
+            "merchant_sales": merchant_sales,
+            "window_start": start_date.isoformat(),
+            "window_end": window_end.isoformat(),
         }
         return Response(payload)
 

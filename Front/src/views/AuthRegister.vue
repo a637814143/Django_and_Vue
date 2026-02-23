@@ -54,62 +54,73 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="auth-screen">
-    <section class="auth-card glass">
-      <p class="eyebrow">创建账号</p>
-      <h1>加入校园文创生态</h1>
-      <p class="subtitle">消费者可以快速下单，商家可管理库存，管理员有终极权限</p>
-
-      <form class="auth-form" @submit.prevent="handleSubmit">
-        <label>用户名 <input v-model="form.username" required /></label>
-        <label>邮箱 <input v-model="form.email" type="email" required /></label>
-        <label>密码 <input v-model="form.password" type="password" required /></label>
-        <label>
-          选择角色
-          <select v-model="form.role">
-            <option value="CONSUMER">消费者</option>
-            <option value="MERCHANT">商家</option>
-          </select>
-        </label>
-        <p v-if="error" class="error">{{ error }}</p>
-        <button class="btn-primary" type="submit" :disabled="loading">
-          {{ loading ? "创建中..." : "注册并登录" }}
-        </button>
-      </form>
-
-      <p class="switch">
-        已有账号？
-        <RouterLink to="/login">直接登录</RouterLink>
-      </p>
-    </section>
-  </div>
+  <v-container class="fill-height" fluid>
+    <v-row align="center" justify="center">
+      <v-col cols="12" sm="8" md="5">
+        <v-card class="elevation-12">
+          <v-toolbar color="primary" dark flat>
+            <v-toolbar-title>创建账号</v-toolbar-title>
+          </v-toolbar>
+          <v-card-text>
+            <p class="text-h6 text-center mb-4">加入校园文创生态</p>
+            <p class="text-subtitle-1 text-center mb-4">消费者可以快速下单，商家可管理库存，管理员有终极权限</p>
+            <v-form @submit.prevent="handleSubmit">
+              <v-text-field
+                v-model="form.username"
+                label="用户名"
+                required
+                prepend-inner-icon="mdi-account"
+              ></v-text-field>
+              <v-text-field
+                v-model="form.email"
+                label="邮箱"
+                type="email"
+                required
+                prepend-inner-icon="mdi-email"
+              ></v-text-field>
+              <v-text-field
+                v-model="form.password"
+                label="密码"
+                type="password"
+                required
+                prepend-inner-icon="mdi-lock"
+              ></v-text-field>
+              <v-select
+                v-model="form.role"
+                :items="[{title:'消费者', value: 'CONSUMER'}, {title:'商家', value:'MERCHANT'}]"
+                label="选择角色"
+                required
+                prepend-inner-icon="mdi-account-group"
+              ></v-select>
+              <v-alert v-if="error" type="error" dense dismissible class="mb-4">
+                {{ error }}
+              </v-alert>
+              <v-btn
+                :loading="loading"
+                :disabled="loading"
+                type="submit"
+                color="primary"
+                block
+                size="large"
+              >
+                {{ loading ? "创建中..." : "注册并登录" }}
+              </v-btn>
+            </v-form>
+          </v-card-text>
+          <v-card-actions class="justify-center">
+             <p class="text-center">
+              已有账号？
+              <RouterLink to="/login">直接登录</RouterLink>
+            </p>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>
-.auth-screen {
+.fill-height {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 40px 16px;
-  background: radial-gradient(circle at top, rgba(111, 207, 151, 0.4), rgba(232, 246, 238, 0.9));
-}
-
-.auth-card {
-  width: min(520px, 100%);
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 24px 0;
-}
-
-.error {
-  color: #c53030;
-}
-
-.switch {
-  text-align: center;
 }
 </style>

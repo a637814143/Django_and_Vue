@@ -18,7 +18,13 @@ from campus_store.accounts.views import (
     UserDirectoryViewSet,
     ResetPasswordView,
 )
-from campus_store.analytics.views import AnalyticsOverviewView, MetricViewSet, UserStatsView, UserLogsView
+from campus_store.analytics.views import (
+    AnalyticsOverviewView,
+    CommerceInsightsView,
+    MetricViewSet,
+    UserStatsView,
+    UserLogsView,
+)
 from campus_store.catalog.views import CategoryViewSet, InventoryLogViewSet, ProductViewSet
 from campus_store.commerce.views import OrderViewSet
 from campus_store.community.views import PostViewSet
@@ -75,6 +81,7 @@ urlpatterns = [
     path("api/accounts/logout/", LogoutView.as_view(), name="logout"),
     path("api/accounts/reset_password/", ResetPasswordView.as_view(), name="reset-password"),
     path("api/analytics/overview/", AnalyticsOverviewView.as_view(), name="analytics-overview"),
+    path("api/analytics/commerce-insights/", CommerceInsightsView.as_view(), name="analytics-commerce-insights"),
     path("api/analytics/user-stats/", UserStatsView.as_view(), name="analytics-user-stats"),
     path("api/analytics/user-logs/<int:user_id>/", UserLogsView.as_view(), name="analytics-user-logs"),
     path("api/admin/terminal/", AdminTerminalView.as_view(), name="admin-terminal"),

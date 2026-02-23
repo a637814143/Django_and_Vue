@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import GlassCard from "../components/ui/GlassCard.vue";
 import { walletApi } from "../api";
 
 const config = reactive({
@@ -25,8 +24,18 @@ const voucherHistory = ref([]);
 const voucherHistoryLoading = ref(false);
 const voucherHistoryError = ref("");
 const voucherPage = ref(1);
-const pageSize = 30;
+const pageSize = 10;
 const copiedCode = ref("");
+
+const voucherHistoryHeaders = [
+    { text: 'Code', value: 'code' },
+    { text: 'Amount', value: 'amount' },
+    { text: 'Created At', value: 'created_at' },
+    { text: 'Redeemed', value: 'is_redeemed' },
+    { text: 'Redeemed By', value: 'redeemed_by' },
+    { text: 'Redeemed At', value: 'redeemed_at' },
+    { text: 'Actions', value: 'actions', sortable: false },
+]
 
 const pagedVoucherHistory = computed(() => {
   const start = (voucherPage.value - 1) * pageSize;
@@ -34,10 +43,8 @@ const pagedVoucherHistory = computed(() => {
 });
 const voucherPageCount = computed(() => Math.max(1, Math.ceil(voucherHistory.value.length / pageSize)));
 
-const changeVoucherPage = (delta) => {
-  const next = voucherPage.value + delta;
-  if (next < 1 || next > voucherPageCount.value) return;
-  voucherPage.value = next;
+const changeVoucherPage = (page) => {
+  voucherPage.value = page;
 };
 
 const loadConfig = async () => {
@@ -136,201 +143,72 @@ onMounted(() => {
 </script>
 
 <template>
-  <GlassCard title="系统管理" subtitle="钱包挡位 & 兑换码">
-    <p v-if="loading" class="hint">加载中...</p>
-    <p v-else-if="error" class="error">{{ error }}</p>
-    <div v-else class="form">
-      <label>
-        低档免审核上限（元）
-        <input
-          type="number"
-          min="0"
-          step="10"
-          v-model.number="config.low_tier_limit"
-          placeholder="例如 200"
-        />
-        <span class="hint">低于或等于该金额的订单直接扣款；超过则进入高档</span>
-      </label>
-      <label class="switch-row">
-        <input type="checkbox" v-model="config.high_tier_requires_review" />
-        <span>高档交易需审核后才能扣款</span>
-      </label>
-      <label class="switch-row">
-        <input type="checkbox" v-model="config.enable_tiers" />
-        <span>启用高/低挡规则（关闭后全部按余额直接扣款）</span>
-      </label>
-      <div class="actions">
-        <button class="btn-outline" type="button" :disabled="saving" @click="loadConfig">重置</button>
-        <button class="btn-primary" type="button" :disabled="saving" @click="saveConfig">
-          {{ saving ? "保存中..." : "保存挡位" }}
-        </button>
-      </div>
-      <p v-if="configSuccess" class="success">{{ configSuccess }}</p>
-
-      <div class="divider"></div>
-
-      <h4>生成兑换码</h4>
-      <label>
-        单个金额
-        <input type="number" min="1" step="1" v-model.number="voucherAmount" />
-      </label>
-      <label>
-        生成数量
-        <input type="number" min="1" max="50" step="1" v-model.number="voucherCount" />
-      </label>
-      <div class="actions">
-        <button class="btn-primary" type="button" :disabled="voucherSaving" @click="generateVouchers">
-          {{ voucherSaving ? "生成中..." : "生成" }}
-        </button>
-      </div>
-      <p v-if="voucherError" class="error">{{ voucherError }}</p>
-      <p v-if="voucherSuccess" class="success">{{ voucherSuccess }}</p>
-      <div v-if="voucherResult.length" class="voucher-list">
-        <p class="hint">已生成兑换码（同时已扣除管理员余额）：</p>
-        <div v-for="code in voucherResult" :key="code.code" class="voucher-chip" @click="copyCode(code.code)">
-          <code>{{ code.code }}</code>
-          <span>¥{{ code.amount }}</span>
-          <small>创建于 {{ code.created_at ? new Date(code.created_at).toLocaleString() : "" }}</small>
-          <small v-if="code.is_redeemed">已兑</small>
-          <small v-if="copiedCode === code.code" class="copied">已复制</small>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-      <div class="history-head">
-        <h4>兑换码历史</h4>
-        <div class="actions">
-          <button class="btn-outline" type="button" :disabled="voucherHistoryLoading" @click="loadVoucherHistory">
-            {{ voucherHistoryLoading ? "加载中..." : "刷新" }}
-          </button>
-        </div>
-      </div>
-      <p v-if="voucherHistoryError" class="error">{{ voucherHistoryError }}</p>
-      <div class="voucher-list" v-if="voucherHistory.length">
-        <div
-          v-for="code in pagedVoucherHistory"
-          :key="code.code"
-          class="voucher-chip"
-          @click="copyCode(code.code)"
-        >
-          <code>{{ code.code }}</code>
-          <span>¥{{ code.amount }}</span>
-          <small>创建：{{ code.created_at ? new Date(code.created_at).toLocaleString() : "-" }}</small>
-          <small v-if="code.is_redeemed">
-            已兑给 {{ code.redeemed_by || "用户" }} · {{ code.redeemed_at ? new Date(code.redeemed_at).toLocaleString() : "" }}
-          </small>
-          <small v-else>未兑换</small>
-          <small v-if="copiedCode === code.code" class="copied">已复制</small>
-        </div>
-      </div>
-      <p v-else-if="!voucherHistoryLoading" class="hint">暂无历史兑换码</p>
-      <div class="pager" v-if="voucherHistory.length">
-        <button class="btn-outline" :disabled="voucherPage === 1" @click="changeVoucherPage(-1)">上一页</button>
-        <span class="hint">第 {{ voucherPage }} / {{ voucherPageCount }} 页</span>
-        <button class="btn-outline" :disabled="voucherPage === voucherPageCount" @click="changeVoucherPage(1)">下一页</button>
-      </div>
-    </div>
-  </GlassCard>
+    <v-container fluid>
+        <v-card>
+            <v-card-title>系统管理</v-card-title>
+            <v-card-subtitle>钱包挡位 & 兑换码</v-card-subtitle>
+            <v-card-text>
+                <v-progress-circular v-if="loading" indeterminate></v-progress-circular>
+                <v-alert v-else-if="error" type="error">{{ error }}</v-alert>
+                <v-form v-else>
+                    <v-text-field
+                        v-model.number="config.low_tier_limit"
+                        label="低档免审核上限（元）"
+                        type="number"
+                        min="0"
+                        step="10"
+                        placeholder="例如 200"
+                        hint="低于或等于该金额的订单直接扣款；超过则进入高档"
+                        persistent-hint
+                    ></v-text-field>
+                    <v-switch v-model="config.high_tier_requires_review" label="高档交易需审核后才能扣款" color="primary"></v-switch>
+                    <v-switch v-model="config.enable_tiers" label="启用高/低挡规则（关闭后全部按余额直接扣款）" color="primary"></v-switch>
+                    <div class="d-flex ga-2">
+                        <v-btn @click="loadConfig" :disabled="saving">重置</v-btn>
+                        <v-btn color="primary" @click="saveConfig" :loading="saving">{{ saving ? "保存中..." : "保存挡位" }}</v-btn>
+                    </div>
+                     <v-alert v-if="configSuccess" type="success" class="mt-4">{{ configSuccess }}</v-alert>
+                </v-form>
+                <v-divider class="my-4"></v-divider>
+                <h4>生成兑换码</h4>
+                <v-form>
+                    <v-text-field v-model.number="voucherAmount" label="单个金额" type="number" min="1" step="1"></v-text-field>
+                    <v-text-field v-model.number="voucherCount" label="生成数量" type="number" min="1" max="50" step="1"></v-text-field>
+                    <v-btn color="primary" @click="generateVouchers" :loading="voucherSaving">{{ voucherSaving ? "生成中..." : "生成" }}</v-btn>
+                    <v-alert v-if="voucherError" type="error" class="mt-4">{{ voucherError }}</v-alert>
+                    <v-alert v-if="voucherSuccess" type="success" class="mt-4">{{ voucherSuccess }}</v-alert>
+                    <v-chip-group v-if="voucherResult.length" class="mt-4" column>
+                        <v-chip v-for="code in voucherResult" :key="code.code" @click="copyCode(code.code)">
+                            {{ code.code }} - ¥{{ code.amount }}
+                            <v-icon v-if="copiedCode === code.code" right>mdi-content-copy</v-icon>
+                        </v-chip>
+                    </v-chip-group>
+                </v-form>
+                <v-divider class="my-4"></v-divider>
+                 <div class="d-flex justify-space-between align-center">
+                    <h4>兑换码历史</h4>
+                    <v-btn @click="loadVoucherHistory" :loading="voucherHistoryLoading">{{ voucherHistoryLoading ? '加载中...' : '刷新' }}</v-btn>
+                </div>
+                <v-alert v-if="voucherHistoryError" type="error" class="mt-4">{{ voucherHistoryError }}</v-alert>
+                <v-data-table
+                    :headers="voucherHistoryHeaders"
+                    :items="voucherHistory"
+                    :loading="voucherHistoryLoading"
+                    :page.sync="voucherPage"
+                    :items-per-page="pageSize"
+                    @page-count="voucherPageCount = $event"
+                    class="elevation-1 mt-4"
+                >
+                    <template v-slot:item.is_redeemed="{ item }">
+                        <v-chip :color="item.is_redeemed ? 'success' : 'grey'">{{ item.is_redeemed ? '已兑换' : '未兑换' }}</v-chip>
+                    </template>
+                     <template v-slot:item.actions="{ item }">
+                        <v-btn size="small" variant="text" prepend-icon="mdi-content-copy" @click="copyCode(item.code)">
+                            复制
+                        </v-btn>
+                    </template>
+                </v-data-table>
+            </v-card-text>
+        </v-card>
+    </v-container>
 </template>
-
-<style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: #0f2d1f;
-  font-weight: 600;
-}
-
-input[type="number"] {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 45, 31, 0.12);
-}
-
-.switch-row {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-weight: 500;
-  background: rgba(15, 45, 31, 0.04);
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-
-.switch-row input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-}
-
-.switch-row span {
-  flex: 1;
-  line-height: 1.4;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.hint {
-  color: #60756a;
-}
-
-.error {
-  color: #b42318;
-  margin: 0;
-}
-
-.success {
-  color: #0f5132;
-  margin: 0;
-}
-
-.divider {
-  height: 1px;
-  background: rgba(15, 45, 31, 0.08);
-}
-
-.voucher-list {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.history-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.voucher-chip {
-  background: rgba(15, 45, 31, 0.06);
-  padding: 8px 10px;
-  border-radius: 10px;
-  display: grid;
-  gap: 2px;
-  min-width: 160px;
-  cursor: pointer;
-}
-
-.copied {
-  color: #0f5132;
-}
-
-.pager {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-</style>

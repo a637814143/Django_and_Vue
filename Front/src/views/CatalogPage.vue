@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import GlassCard from "../components/ui/GlassCard.vue";
 import { catalogApi } from "../api";
 
 const products = ref([]);
@@ -157,264 +156,127 @@ onMounted(loadCatalog);
 </script>
 
 <template>
-  <div class="grid">
-    <GlassCard title="商品清单" subtitle="商家视角">
-      <div v-if="loading">加载中...</div>
-      <div v-else-if="!products.length" class="empty-state">暂无商品，请在右侧表单发布。</div>
-      <div v-else class="catalog-grid">
-        <article v-for="product in products" :key="product.id" class="product-tile">
-          <div
-            class="tile-cover"
-            :style="{
-              backgroundImage: product.hero_image
-                ? `url(${product.hero_image})`
-                : 'linear-gradient(135deg, #e2e8f0, #cbd5e1)'
-            }"
-          ></div>
-          <p class="eyebrow">{{ product.category?.name || "未分类" }}</p>
-          <h3>{{ product.title }}</h3>
-          <p>{{ product.description || "暂无描述" }}</p>
-          <div class="meta">
-            <span>库存 {{ product.inventory }}</span>
-            <strong>¥{{ product.price }}</strong>
-          </div>
-          <button class="btn-outline" type="button" @click="startEdit(product)">编辑</button>
-        </article>
-      </div>
-    </GlassCard>
-
-    <div class="side-stack">
-      <GlassCard :title="editingId ? '编辑商品' : '发布新品'" subtitle="可修改商品属性">
-        <form class="form" @submit.prevent="submitProduct">
-          <label>名称 <input v-model="form.title" required placeholder="青柠手账套装..." /></label>
-          <label>描述 <textarea v-model="form.description" rows="3"></textarea></label>
-          <label class="cover-field">
-            <span>封面图（上传或粘贴 data:base64）</span>
-            <input type="file" accept="image/*" @change="handleFile" />
-            <input v-model="form.hero_image" placeholder="data:image/png;base64,..." />
-          </label>
-          <div v-if="heroPreview" class="preview">
-            <span class="eyebrow">预览</span>
-            <div class="tile-cover" :style="{ backgroundImage: `url(${heroPreview})` }"></div>
-          </div>
-          <label
-            >所属分类
-            <select v-model="form.category_id" :disabled="!categories.length">
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-            </select>
-          </label>
-          <p v-if="!categories.length" class="helper">暂无分类，请先在下方创建。</p>
-          <div class="row">
-            <label>价格 <input v-model.number="form.price" type="number" min="0" step="0.01" /></label>
-            <label>库存 <input v-model.number="form.inventory" type="number" min="0" /></label>
-          </div>
-          <p v-if="creationError" class="error">{{ creationError }}</p>
-          <div class="actions">
-            <button class="btn-outline" type="button" v-if="editingId" @click="resetForm">取消编辑</button>
-            <button class="btn-primary" type="submit" :disabled="!categories.length">
-              {{ editingId ? "保存修改" : "创建商品" }}
-            </button>
-          </div>
-        </form>
-      </GlassCard>
-
-      <GlassCard title="分类管理" subtitle="管理员/商家可维护">
-        <div class="category-panel">
-          <ul class="category-list">
-            <li v-if="!categories.length" class="category-empty">还没有分类，创建后即可在发布商品时选择。</li>
-            <li v-for="cat in categories" :key="cat.id" class="category-item">
-              <div>
-                <strong>{{ cat.name }}</strong>
-                <p>{{ cat.description || "暂无描述" }}</p>
-              </div>
-              <small class="category-meta">由 {{ cat.created_by || "系统" }}</small>
-            </li>
-          </ul>
-          <form class="category-form" @submit.prevent="createCategory">
-            <label>分类名称 <input v-model="categoryForm.name" placeholder="校园文创衍生" /></label>
-            <label>描述 <textarea v-model="categoryForm.description" rows="2" placeholder="展示给商家/消费者"></textarea></label>
-            <p v-if="categoryError" class="error">{{ categoryError }}</p>
-            <p v-else-if="categorySuccess" class="success">{{ categorySuccess }}</p>
-            <button class="btn-outline" type="submit" :disabled="categorySubmitting">
-              {{ categorySubmitting ? "创建中..." : "新增分类" }}
-            </button>
-          </form>
-        </div>
-      </GlassCard>
-    </div>
-  </div>
+  <v-container fluid>
+    <v-row>
+      <v-col cols="12" md="8">
+        <v-card>
+          <v-card-title>商品清单</v-card-title>
+          <v-card-subtitle>商家视角</v-card-subtitle>
+          <v-divider></v-divider>
+          <v-card-text>
+            <v-progress-circular v-if="loading" indeterminate color="primary"></v-progress-circular>
+            <p v-else-if="!products.length">暂无商品，请在右侧表单发布。</p>
+            <v-row v-else>
+              <v-col v-for="product in products" :key="product.id" cols="12" sm="6" lg="4">
+                <v-card>
+                  <v-img
+                    :src="product.hero_image"
+                    height="200px"
+                    cover
+                  >
+                    <template v-slot:error>
+                      <v-img
+                        src="https://via.placeholder.com/300x200.png?text=No+Image"
+                        height="200px"
+                        cover
+                      ></v-img>
+                    </template>
+                  </v-img>
+                  <v-card-title>{{ product.title }}</v-card-title>
+                  <v-card-subtitle>{{ product.category?.name || "未分类" }}</v-card-subtitle>
+                  <v-card-text>{{ product.description || "暂无描述" }}</v-card-text>
+                  <v-divider></v-divider>
+                  <v-card-actions>
+                    <v-chip>库存 {{ product.inventory }}</v-chip>
+                    <v-spacer></v-spacer>
+                    <v-chip color="primary">¥{{ product.price }}</v-chip>
+                    <v-btn size="small" variant="text" prepend-icon="mdi-pencil" @click="startEdit(product)">
+                        编辑
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-row>
+          <v-col cols="12">
+            <v-card>
+              <v-card-title>{{ editingId ? '编辑商品' : '发布新品' }}</v-card-title>
+              <v-card-subtitle>可修改商品属性</v-card-subtitle>
+              <v-card-text>
+                <v-form @submit.prevent="submitProduct">
+                  <v-text-field v-model="form.title" label="名称" required placeholder="青柠手账套装..."></v-text-field>
+                  <v-textarea v-model="form.description" label="描述" rows="3"></v-textarea>
+                  <v-file-input @change="handleFile" label="封面图" accept="image/*"></v-file-input>
+                   <v-text-field v-model="form.hero_image" label="或粘贴图片链接" placeholder="data:image/png;base64,..."></v-text-field>
+                  <v-img v-if="heroPreview" :src="heroPreview" height="150" class="mb-4"></v-img>
+                  <v-select
+                    v-model="form.category_id"
+                    :items="categories"
+                    item-title="name"
+                    item-value="id"
+                    label="所属分类"
+                    :disabled="!categories.length"
+                  ></v-select>
+                  <p v-if="!categories.length">暂无分类，请先在下方创建。</p>
+                  <v-row>
+                    <v-col>
+                      <v-text-field v-model.number="form.price" label="价格" type="number" min="0" step="0.01"></v-text-field>
+                    </v-col>
+                    <v-col>
+                      <v-text-field v-model.number="form.inventory" label="库存" type="number" min="0"></v-text-field>
+                    </v-col>
+                  </v-row>
+                  <v-alert v-if="creationError" type="error">{{ creationError }}</v-alert>
+                  <v-card-actions>
+                    <v-btn v-if="editingId" text @click="resetForm">取消编辑</v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn type="submit" color="primary" :disabled="!categories.length">
+                      {{ editingId ? "保存修改" : "创建商品" }}
+                    </v-btn>
+                  </v-card-actions>
+                </v-form>
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="12">
+            <v-card>
+              <v-card-title>分类管理</v-card-title>
+               <v-card-subtitle>管理员/商家可维护</v-card-subtitle>
+              <v-card-text>
+                <v-list>
+                  <v-list-item v-if="!categories.length">
+                    <v-list-item-content>
+                      <v-list-item-title class="text-center">还没有分类，创建后即可在发布商品时选择。</v-list-item-title>
+                    </v-list-item-content>
+                  </v-list-item>
+                  <v-list-item v-for="cat in categories" :key="cat.id">
+                    <v-list-item-content>
+                      <v-list-item-title>{{ cat.name }}</v-list-item-title>
+                      <v-list-item-subtitle>{{ cat.description || "暂无描述" }}</v-list-item-subtitle>
+                    </v-list-item-content>
+                     <v-list-item-action>
+                      <small>由 {{ cat.created_by || "系统" }}</small>
+                    </v-list-item-action>
+                  </v-list-item>
+                </v-list>
+                <v-form @submit.prevent="createCategory" class="mt-4">
+                  <v-text-field v-model="categoryForm.name" label="分类名称" placeholder="校园文创衍生"></v-text-field>
+                  <v-textarea v-model="categoryForm.description" label="描述" rows="2" placeholder="展示给商家/消费者"></v-textarea>
+                  <v-alert v-if="categoryError" type="error">{{ categoryError }}</v-alert>
+                  <v-alert v-if="categorySuccess" type="success">{{ categorySuccess }}</v-alert>
+                  <v-btn type="submit" color="secondary" :loading="categorySubmitting">
+                    {{ categorySubmitting ? "创建中..." : "新增分类" }}
+                  </v-btn>
+                </v-form>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
-
-<style scoped>
-.grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 1024px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.side-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.catalog-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
-}
-
-.product-tile {
-  border-radius: 16px;
-  padding: 14px;
-  border: 1px solid rgba(15, 45, 31, 0.08);
-  background: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tile-cover {
-  width: 100%;
-  height: 140px;
-  border-radius: 10px;
-  background-size: cover;
-  background-position: center;
-  border: 1px solid #e2e8f0;
-}
-
-.eyebrow {
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  color: #5c6f63;
-  margin: 0;
-}
-
-.meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.empty-state {
-  padding: 24px;
-  text-align: center;
-  color: #6b7280;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-}
-
-.cover-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.cover-field input[type="file"] {
-  padding: 6px 0;
-}
-
-.helper {
-  font-size: 0.8rem;
-  color: #6b7f73;
-  margin-top: -6px;
-}
-
-.category-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.category-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.category-item {
-  border-radius: 18px;
-  border: 1px solid rgba(15, 45, 31, 0.08);
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.9);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.category-item p {
-  margin: 4px 0 0;
-  font-size: 0.85rem;
-  color: #4c675b;
-}
-
-.category-item strong {
-  font-size: 0.95rem;
-}
-
-.category-meta {
-  font-size: 0.75rem;
-  color: #82a091;
-}
-
-.category-empty {
-  text-align: center;
-  color: #6b7f73;
-  padding: 12px;
-  border-radius: 18px;
-  border: 1px dashed rgba(15, 45, 31, 0.2);
-}
-
-.category-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.error {
-  color: #b42318;
-}
-
-.success {
-  color: #117a42;
-}
-
-.preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form button[disabled],
-.category-form button[disabled] {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>
